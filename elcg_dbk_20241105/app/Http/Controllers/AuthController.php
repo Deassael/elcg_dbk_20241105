@@ -3,31 +3,31 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
     //
     public function register(Request $request){
-        $validateData = $request->validate([
+        $validatedData = $request->validate([
             'name'=>['required','string','max:255'],
             'email'=>['required','string','email', 'max:255', 'unique:users'],
             'password'=>['required','string','min:8', 'max:20'],
         ]);
 
         $user = User::create([
-            'name'=>$validateData['name'],
-            'email'=>$validateData['email'],
-            'password'=> Hash::make($validateData['password']),
+            'name'=>$validatedData['name'],
+            'email'=>$validatedData['email'],
+            'password'=> Hash::make($validatedData['password']),
             ]);
 
             $token = $user->createToken('auth_token')->plainTextToken;
 
             return response()->json([
                 "success"=>true,
-                "erorrs"=>[
+                "errors"=>[
                     "code"=>0,
                     "msg"=> "",
                 ],
@@ -41,19 +41,19 @@ class AuthController extends Controller
     }
 
     public function login(Request $request){
-        if(!Auth::attempt($request->only("email", "passwird"))){
-            return response()->json([
-                "success"=>false,
-                "erros"=>[
+        if(!Auth::attempt($request->only("email", "password"))){
+            return response()->json( [
+                "success"=> false,
+                "errors"=>[
                     "code"=>401,
-                    "msg"=>"No se encotraron las credenciales"
+                    "msg"=>"No se reconocen las credenciales"
                 ],
                 "data"=>"",
                 "count"=> 0
-            ],401);
+            ], 401);
         }
         $user = User::where("email", $request->email)->firstOrFail();
-        $toke = $user->createToken("auth_token")->plainTextToken;
+        $token = $user->createToken("auth_token")->plainTextToken;
 
         return response()->json([
             "success"=>true,
@@ -61,20 +61,23 @@ class AuthController extends Controller
                 "code"=>200,
                 "msg"=> ""
             ],
-            "data"=>"Ha iniciado sesión correctamente",
+            "data"=>[
+                "access_token"=>$token,
+                "token_type"=> "Bearer"
+            ],
             "count"=> 1
-        ],200);
+        ], 200);
     }
 
     public function me(Request $request){
-        return response()->json([
+        return response()->json( [
             "success"=>true,
-            "erros"=>[
+            "errors"=>[
                 "code"=>200,
                 "msg"=>""
             ],
             "data"=>$request->user(),
             "count"=> 1
-        ],200);
+        ], 200);
     }
 }
